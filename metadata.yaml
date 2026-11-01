@@ -1,0 +1,6 @@
+name: astrbot_plugin_group_model_selection
+display_name: 会话模型设置
+desc: 通过 /msto 按别名或模型 ID 设置会话首选模型，支持管理员白名单（UID）、可选查询命令与可视化配置。
+version: v1.0.0
+author: K_PU
+repo: https://github.com/XKPU/astrbot_plugin_group_model_selection

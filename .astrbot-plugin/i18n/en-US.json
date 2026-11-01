@@ -1,0 +1,11 @@
+{
+  "metadata": {
+    "display_name": "Session Model Settings",
+    "desc": "Set the preferred model per session via /msto with aliases or model IDs, plus an admin whitelist, optional query commands, and a config view."
+  },
+  "views": {
+    "config": {
+      "title": "Session Model Settings"
+    }
+  }
+}

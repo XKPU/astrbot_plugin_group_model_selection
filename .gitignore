@@ -207,4 +207,8 @@ marimo/_lsp/
 __marimo__/
 
 astrbot_plugin_group_model_selection.zip
-UI/
+
+# Vue UI build workspace
+vue/node_modules/
+vue/.build-tmp/
+vue/.npm-cache/

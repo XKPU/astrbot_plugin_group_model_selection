@@ -1,0 +1,127 @@
+{
+  "enable_main_command": {
+    "description": "启用主命令",
+    "type": "bool",
+    "default": true,
+    "hint": "关闭后聊天命令不再响应主命令，仅可在配置页设置会话模型（适用于 UID 无法唯一标记或可能被伪造的平台）。"
+  },
+  "command_prefix": {
+    "description": "命令头",
+    "type": "string",
+    "default": "/",
+    "hint": "聊天命令的前缀，默认 /。留空时回退为 /。"
+  },
+  "command_name": {
+    "description": "主命令名",
+    "type": "string",
+    "default": "msto",
+    "hint": "设置本会话首选模型的命令，默认 msto。"
+  },
+  "sid_command_prefix": {
+    "description": "查询命令头",
+    "type": "string",
+    "default": "/",
+    "hint": "会话查询命令（默认 /mstosid）的前缀，留空时按 / 处理。指令头为 / 时命令名不能为 sid（与 AstrBot 内置 /sid 冲突，将自动回退为 mstosid）。"
+  },
+  "sid_command_name": {
+    "description": "查询命令名",
+    "type": "string",
+    "default": "mstosid",
+    "hint": "在 /sid 不可用时查询会话信息的命令名，默认 mstosid。"
+  },
+  "enable_sid_command": {
+    "description": "启用 /mstosid",
+    "type": "bool",
+    "default": false,
+    "hint": "在 /sid 不可用时开启。命令输出会话 UMO 与 UID 等信息，UID 供管理员填入白名单，不受白名单限制。"
+  },
+  "enable_list_command": {
+    "description": "启用模型列表命令",
+    "type": "bool",
+    "default": false,
+    "hint": "开启后可用列表命令查看当前配置的可用模型。"
+  },
+  "list_command_prefix": {
+    "description": "列表命令头",
+    "type": "string",
+    "default": "/",
+    "hint": "模型列表命令（默认 /mstolist）的前缀，留空时按 / 处理。"
+  },
+  "list_command_name": {
+    "description": "列表命令名",
+    "type": "string",
+    "default": "mstolist",
+    "hint": "查看可用模型列表的命令名，默认 mstolist。"
+  },
+  "list_output_mode": {
+    "description": "列表输出方式",
+    "type": "string",
+    "default": "alias",
+    "options": ["alias", "id", "both"],
+    "hint": "alias=仅别名（无别名时回退为 ID），id=仅 ID，both=别名+ID。"
+  },
+  "enable_curr_command": {
+    "description": "启用当前模型命令",
+    "type": "bool",
+    "default": false,
+    "hint": "开启后可用当前模型命令查看本会话正在使用的模型。"
+  },
+  "curr_command_prefix": {
+    "description": "当前模型命令头",
+    "type": "string",
+    "default": "/",
+    "hint": "当前模型命令（默认 /mstom）的前缀，留空时按 / 处理。"
+  },
+  "curr_command_name": {
+    "description": "当前模型命令名",
+    "type": "string",
+    "default": "mstom",
+    "hint": "查看会话当前模型的命令名，默认 mstom。"
+  },
+  "curr_output_mode": {
+    "description": "当前模型输出方式",
+    "type": "string",
+    "default": "as_set",
+    "options": ["as_set", "alias", "id", "both"],
+    "hint": "as_set=跟随设置时输入（别名或 ID），alias=仅别名，id=仅 ID，both=别名+ID。"
+  },
+  "allowed_uids": {
+    "description": "允许使用主命令的用户 UID 列表",
+    "type": "list",
+    "default": [],
+    "hint": "通过 /sid（或 /mstosid）输出的 UID（即发送者 ID）。列表为空时所有人都无法使用主命令。"
+  },
+  "models": {
+    "description": "主命令可用模型列表",
+    "type": "template_list",
+    "default": [],
+    "hint": "从 AstrBot 已配置的模型中挑选允许通过主命令切换的条目，必须在此单独配置（不直接沿用 AstrBot 配置）。切换时输入别名或模型 ID 均可，别名优先匹配。",
+    "templates": {
+      "model": {
+        "name": "模型条目",
+        "hint": "一条允许通过主命令切换的模型。",
+        "display_item": "alias",
+        "items": {
+          "alias": {
+            "description": "别名",
+            "type": "string",
+            "default": "",
+            "hint": "可选。切换命令的更短称呼，如 glm-5.2；留空时只能用模型 ID 切换。"
+          },
+          "provider_id": {
+            "description": "模型 ID（提供商 ID）",
+            "type": "string",
+            "default": "",
+            "hint": "必须与 AstrBot 配置中的模型（提供商）ID 完全一致。"
+          },
+          "enabled": {
+            "description": "启用此条目",
+            "type": "bool",
+            "default": true,
+            "hint": "关闭后此条目不参与匹配。"
+          }
+        }
+      }
+    }
+  }
+}

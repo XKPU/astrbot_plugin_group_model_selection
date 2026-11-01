@@ -1,0 +1,79 @@
+<template>
+  <section class="tab-panel">
+    <div class="panel-head">
+      <h2>可用模型设置</h2>
+      <button type="button" class="btn tonal sm" @click="addModel">+ 添加模型</button>
+    </div>
+    <p class="hint">
+      选择主命令可用的模型（来自 AstrBot 提供商配置），可设置别名；未启用别名的模型直接用模型 ID 切换。列表命令仅显示已启用的条目。
+    </p>
+    <div v-if="models.length === 0" class="empty">暂无条目，点击右上角「+ 添加模型」。</div>
+    <div v-for="(model, index) in models" :key="model.__template_key || index" class="model-card">
+      <div class="model-head">
+        <label class="switch-row grow">
+          <input
+            type="checkbox"
+            :checked="model.enabled !== false"
+            @change="toggleEnabled(index, $event)"
+          >
+          <span>启用</span>
+        </label>
+        <button type="button" class="btn danger-text sm" @click="removeModel(index)">删除</button>
+      </div>
+      <div class="model-grid">
+        <div class="field">
+          <label :for="'model-alias-' + index">别名</label>
+          <input
+            :id="'model-alias-' + index"
+            v-model="model.alias"
+            type="text"
+            placeholder="别名，如 glm"
+            @input="markDirty"
+          >
+        </div>
+        <div class="field">
+          <label :for="'model-pid-' + index">模型 ID</label>
+          <input
+            :id="'model-pid-' + index"
+            v-model="model.provider_id"
+            type="text"
+            list="provider-list"
+            placeholder="AstrBot 提供商 ID"
+            @input="markDirty"
+          >
+        </div>
+      </div>
+    </div>
+  </section>
+</template>
+
+<script setup>
+import { computed } from "vue";
+import { store, markDirty } from "../store.js";
+const models = computed(() => store.config.models);
+
+function nextKey() {
+  const keys = models.value.map((item) => Number(item.__template_key) || 0);
+  return (keys.length ? Math.max(...keys) : 0) + 1;
+}
+
+function addModel() {
+  models.value.push({
+    __template_key: nextKey(),
+    alias: "",
+    provider_id: "",
+    enabled: true,
+  });
+  markDirty();
+}
+
+function removeModel(index) {
+  models.value.splice(index, 1);
+  markDirty();
+}
+
+function toggleEnabled(index, event) {
+  models.value[index].enabled = event.target.checked;
+  markDirty();
+}
+</script>
