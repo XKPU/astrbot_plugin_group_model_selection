@@ -5,7 +5,7 @@
 [![Platform](https://img.shields.io/badge/platform-AstrBot-purple?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBkPSJNMzUgMjBRMzcgNDIgNjUgNTJRMzcgNjIgMzUgODRRMzMgNjIgNSA1MlEzMyA0MiAzNSAyMFoiIGZpbGw9IiM0Mjc4YjgiLz48cGF0aCBkPSJNNzUgMTJRNzYgMjMgODggMjdRNzYgMzEgNzUgNDJRNzQgMzEgNjIgMjdRNzQgMjMgNzUgMTJaIiBmaWxsPSIjNDI3OGI4Ii8+PC9zdmc+)](https://github.com/AstrBotDevs/AstrBot)
 [![Author](https://custom-icon-badges.demolab.com/badge/author-K__PU-orange?logo=k_pu)](https://github.com/XKPU)
 
-通过聊天命令为**当前会话**（群聊或私聊）设置首选模型，支持别名、管理员白名单（UID）、模型列表与当前模型查询命令，并提供独立的可视化配置页面（含会话模型管理）。
+为**当前会话**（群聊或私聊）设置首选模型，支持别名、管理员白名单（UID）、模型列表与当前模型查询命令，并提供独立的可视化配置页面（含会话模型管理）。
 
 > [!WARNING]
 > 插件依赖于平台返回的 UID 做白名单判断，某些平台的 UID 可能被伪造或无法判断单一用户，在此类平台上请禁用指令设置，采用可视化配置页面管理。
