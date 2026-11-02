@@ -77,7 +77,7 @@ import SessionTab from "./tabs/SessionTab.vue";
 
 const tabs = [
   { id: "command", label: "命令设置" },
-  { id: "admin", label: "管理员设置" },
+  { id: "admin", label: "管理员白名单" },
   { id: "models", label: "可用模型设置" },
   { id: "session", label: "会话模型" },
 ];

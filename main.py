@@ -45,19 +45,19 @@ class GroupModelSelectionPlugin(Star):
             route,
             self._web_get_config,
             ["GET"],
-            "获取群模型选择插件配置",
+            "获取会话模型插件配置",
         )
         self.context.register_web_api(
             route,
             self._web_save_config,
             ["POST"],
-            "保存群模型选择插件配置",
+            "保存会话模型插件配置",
         )
         self.context.register_web_api(
             f"/{PLUGIN_NAME}/providers",
             self._web_list_providers,
             ["GET"],
-            "列出 AstrBot 已配置的模型",
+            "列出 AstrBot 已配置的提供商（模型）",
         )
         self.context.register_web_api(
             f"/{PLUGIN_NAME}/sessions",
@@ -75,7 +75,7 @@ class GroupModelSelectionPlugin(Star):
             f"/{PLUGIN_NAME}/session-model",
             self._web_session_model,
             ["GET"],
-            "查询会话当前模型",
+            "查询当前会话模型",
         )
         self.context.register_web_api(
             f"/{PLUGIN_NAME}/session-model",
@@ -277,7 +277,7 @@ class GroupModelSelectionPlugin(Star):
 
     @filter.event_message_type(filter.EventMessageType.ALL)
     async def on_message(self, event: AstrMessageEvent, *args, **kwargs):
-        """Handle chat messages, matching the /msto and /mstosid commands.
+        """Handle chat messages, matching the /msto, /mstosid, /mstolist and /mstom commands.
 
         Args:
             event: The incoming message event.
@@ -317,10 +317,11 @@ class GroupModelSelectionPlugin(Star):
                 return
             if not (self.config and self.config.get("enable_main_command", True)):
                 return
-            if not self._uid_allowed(event):
+            is_admin = self._uid_allowed(event)
+            if not is_admin and not provider_ops.public_entries(self.config or {}):
                 await self._reply(event, "本用户无权使用该命令。")
                 return
-            await self._run_model_command(event, parsed["args"])
+            await self._run_model_command(event, parsed["args"], is_admin)
         except Exception as exc:
             logger.exception("astrbot_plugin_group_model_selection: 处理失败: %s", exc)
             if woken:
@@ -349,9 +350,13 @@ class GroupModelSelectionPlugin(Star):
         await self._reply(event, "\n".join(lines))
 
     async def _handle_list_command(self, event: AstrMessageEvent) -> None:
-        """Reply with the configured model list in the configured format."""
+        """Reply with the model list visible to the requesting user."""
         mode = str((self.config or {}).get("list_output_mode") or "alias")
         entries = provider_ops.model_entries(self.config or {})
+        if not self._uid_allowed(event):
+            public = provider_ops.public_entries(self.config or {})
+            if public:
+                entries = public
         lines = []
         for entry in entries:
             rendered = provider_ops.format_model_output(
@@ -383,15 +388,27 @@ class GroupModelSelectionPlugin(Star):
             f"当前会话模型：{rendered}" if rendered else "当前会话模型：默认配置",
         )
 
-    async def _run_model_command(self, event: AstrMessageEvent, args: str) -> None:
-        """Switch, reset, or report the session's preferred model."""
+    async def _run_model_command(
+        self,
+        event: AstrMessageEvent,
+        args: str,
+        is_admin: bool = True,
+    ) -> None:
+        """Switch, reset, or report the session's preferred model.
+
+        Non-admin users resolve tokens against entries flagged
+        ``public`` only; admins resolve against the whole list.
+        """
         umo = event.unified_msg_origin
         token = args.split(None, 1)[0] if args.split() else ""
         if not token:
             await provider_ops.reset_provider(self.context, umo)
-            await self._reply(event, "当前群模型已恢复为默认配置。")
+            await self._reply(event, "当前会话模型已恢复为默认配置。")
             return
-        entry = provider_ops.resolve_model(self.config or {}, token)
+        key = "models" if is_admin else "public"
+        entry = provider_ops.resolve_model(self.config or {}, token, key)
+        if entry is None and is_admin:
+            entry = provider_ops.resolve_model(self.config or {}, token, "public")
         if entry is None:
             await self._reply(event, f"未找到模型或别名：{token}")
             return
@@ -406,7 +423,7 @@ class GroupModelSelectionPlugin(Star):
             )
             await self._reply(event, "设置错误")
             return
-        await self._reply(event, f"当前群模型更改为：{token}")
+        await self._reply(event, f"当前会话模型更改为：{token}")
 
     async def terminate(self):
         """Release resources on unload."""

@@ -5,9 +5,9 @@
       <button type="button" class="btn tonal sm" @click="addRow">+ 新建条目</button>
     </div>
     <p class="hint">
-      列表自动读取已设置首选模型的会话；新会话点击「+ 新建条目」，填入会话 ID（UMO）并设置模型，行为与主命令一致。
+      列表自动读取已设置首选模型的会话；新会话点击「+ 新建条目」，填入 UMO（会话 ID）并设置模型，行为与主命令一致。
     </p>
-    <div v-if="rows.length === 0" class="empty">暂无已设置首选模型的会话；点击「+ 新建条目」填入会话 ID。</div>
+    <div v-if="rows.length === 0" class="empty">暂无已设置首选模型的会话；点击「+ 新建条目」填入 UMO（会话 ID）。</div>
     <div v-for="(row, index) in rows" :key="row.key" class="session-row">
       <div class="session-head">
         <span class="session-title">{{ row.umo || "新条目" }}</span>
@@ -15,14 +15,14 @@
           应用
         </button>
         <button type="button" class="btn tonal sm" :disabled="row.busy" @click="clearRow(index)">
-          清除设置
+        清除模型设置
         </button>
         <button type="button" class="btn danger-text sm" :disabled="row.busy" @click="removeRow(index)">
           删除
         </button>
       </div>
       <div class="field">
-        <label :for="'session-umo-' + row.key">会话 ID（UMO）</label>
+        <label :for="'session-umo-' + row.key">UMO（会话 ID）</label>
         <input
           :id="'session-umo-' + row.key"
           v-model="row.umo"
@@ -97,7 +97,7 @@ function removeRow(index) {
 async function applyRow(index) {
   const row = rows.value[index];
   if (!row.umo.trim()) {
-    row.result = "请先填写会话 ID（UMO）。";
+    row.result = "请先填写 UMO（会话 ID）。";
     row.ok = false;
     return;
   }
@@ -110,7 +110,7 @@ async function applyRow(index) {
     }
     row.result = row.token.trim()
       ? "当前会话模型更改为：" + row.token.trim()
-      : "已清除该会话的独立模型，恢复默认配置。";
+      : "已清除该会话的模型设置，恢复默认配置。";
     row.ok = true;
   } catch (err) {
     row.result = err.message || String(err);
@@ -123,7 +123,7 @@ async function applyRow(index) {
 async function clearRow(index) {
   const row = rows.value[index];
   if (!row.umo.trim()) {
-    row.result = "请先填写会话 ID（UMO）。";
+    row.result = "请先填写 UMO（会话 ID）。";
     row.ok = false;
     return;
   }
@@ -135,7 +135,7 @@ async function clearRow(index) {
       throw new Error(resp.message || "设置错误");
     }
     row.token = "";
-    row.result = "已清除该会话的独立模型，恢复默认配置。";
+    row.result = "已清除该会话的模型设置，恢复默认配置。";
     row.ok = true;
   } catch (err) {
     row.result = err.message || String(err);

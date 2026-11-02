@@ -10,18 +10,48 @@ PROVIDER_PREF_KEY = "provider_perf_chat_completion"
 LAST_INPUT_KEY = "group_model_selection_last_input"
 
 
-def model_entries(config: Any) -> list[dict[str, Any]]:
+def model_entries(config: Any, key: str = "models") -> list[dict[str, Any]]:
     """Return the enabled model entries configured for the command.
 
     Args:
         config: The plugin configuration mapping.
+        key: The config key holding the template list ("models").
+            When ``public`` is True only entries flagged for non-admin
+            use are returned.
 
     Returns:
         The list of enabled, non-empty model entries with their aliases.
     """
     entries: list[dict[str, Any]] = []
+    for item in config.get(key) or []:
+        if not isinstance(item, dict) or not item.get("enabled", True):
+            continue
+        provider_id = str(item.get("provider_id") or "").strip()
+        if not provider_id:
+            continue
+        entries.append(
+            {
+                "provider_id": provider_id,
+                "alias": str(item.get("alias") or "").strip(),
+            }
+        )
+    return entries
+
+
+def public_entries(config: Any) -> list[dict[str, Any]]:
+    """Return the enabled entries flagged as selectable by non-admins.
+
+    Args:
+        config: The plugin configuration mapping.
+
+    Returns:
+        The subset of enabled model entries with ``public`` enabled.
+    """
+    entries: list[dict[str, Any]] = []
     for item in config.get("models") or []:
         if not isinstance(item, dict) or not item.get("enabled", True):
+            continue
+        if not item.get("public", False):
             continue
         provider_id = str(item.get("provider_id") or "").strip()
         if not provider_id:
@@ -38,6 +68,7 @@ def model_entries(config: Any) -> list[dict[str, Any]]:
 def resolve_model(
     config: Any,
     token: str,
+    key: str = "models",
 ) -> dict[str, Any] | None:
     """Resolve a command token to a configured model entry.
 
@@ -46,6 +77,8 @@ def resolve_model(
     Args:
         config: The plugin configuration mapping.
         token: The alias or provider ID typed after the command.
+        key: The config key holding the template list to match against.
+            ``"public"`` matches only entries flagged for non-admin use.
 
     Returns:
         The matched entry, or ``None`` when nothing matches.
@@ -53,7 +86,7 @@ def resolve_model(
     wanted = str(token or "").strip().lower()
     if not wanted:
         return None
-    entries = model_entries(config)
+    entries = public_entries(config) if key == "public" else model_entries(config, key)
     for entry in entries:
         if entry["alias"] and entry["alias"].lower() == wanted:
             return entry
@@ -76,7 +109,7 @@ async def switch_provider(
             ``as_set`` output mode.
 
     Returns:
-        The ``(provider_id, model)`` of the provider now in effect.
+        The ``provider_id`` of the provider now in effect.
 
     Raises:
         ValueError: If the provider ID does not exist.

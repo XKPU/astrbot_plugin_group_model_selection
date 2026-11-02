@@ -29,14 +29,17 @@ def ensure_template_keys(config: dict[str, Any]) -> bool:
     return changed
 
 
-def sanitize_models(value: Any) -> list[dict[str, Any]]:
+def sanitize_models(
+    value: Any, template_key: str = TEMPLATE_KEY
+) -> list[dict[str, Any]]:
     """Normalize the submitted model list into strict entries.
 
     Args:
         value: Raw models value from a web request body.
+        template_key: The template key stamped on each entry.
 
     Returns:
-        The sanitized list of ``{alias, provider_id, enabled}`` dicts.
+        The sanitized list of ``{alias, provider_id, enabled, public}`` dicts.
     """
     if not isinstance(value, list):
         return []
@@ -52,7 +55,8 @@ def sanitize_models(value: Any) -> list[dict[str, Any]]:
                 "alias": str(item.get("alias") or "").strip(),
                 "provider_id": provider_id,
                 "enabled": bool(item.get("enabled", True)),
-                "__template_key": TEMPLATE_KEY,
+                "public": bool(item.get("public", False)),
+                "__template_key": template_key,
             }
         )
     return entries

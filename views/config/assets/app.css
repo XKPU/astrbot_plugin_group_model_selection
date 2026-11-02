@@ -1,31 +1,37 @@
+/* Palette mirrors astrbot_plugin_openai_image (dashboard PurpleTheme
+ * light/dark) so both plugin pages look consistent. */
 :root {
-  --bg: #f3f5f9;
+  color-scheme: light;
+  --bg: #ffffff;
   --panel: #ffffff;
-  --border: #dfe4ec;
-  --text: #1f2430;
-  --muted: #6b7280;
-  --primary: #2563eb;
-  --primary-weak: #e8effd;
+  --border: #d0d0d0;
+  --text: #1b1c1d;
+  --muted: #000000aa;
+  --primary: #3c96ca;
+  --primary-weak: #eef2f6;
+  --primary-strong: #25719c;
   --primary-contrast: #ffffff;
-  --danger: #dc2626;
-  --danger-weak: #fdecec;
-  --ok: #16a34a;
+  --danger: #f44336;
+  --danger-weak: #f9d8d8;
+  --ok: #00c853;
   --radius: 10px;
   --shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 }
 
 [data-theme="dark"] {
-  --bg: #12151c;
-  --panel: #1a1f2a;
-  --border: #2c3444;
-  --text: #e5e9f2;
-  --muted: #9aa4b5;
-  --primary: #4f83f1;
-  --primary-weak: #23324f;
-  --primary-contrast: #ffffff;
-  --danger: #f07070;
-  --danger-weak: #3a2226;
-  --ok: #4ade80;
+  color-scheme: dark;
+  --bg: #242424;
+  --panel: #2a2a2a;
+  --border: #3a3a3a;
+  --text: #e8eaed;
+  --muted: #ffffffdd;
+  --primary: #5ba4d4;
+  --primary-weak: #1a2e3d;
+  --primary-strong: #5ba4d4;
+  --primary-contrast: #10161c;
+  --danger: #ff4d4f;
+  --danger-weak: #3d1a1a;
+  --ok: #52c41a;
   --shadow: none;
 }
 
@@ -107,7 +113,7 @@ body {
 
 .nav-item.active {
   background: var(--primary-weak);
-  color: var(--primary);
+  color: var(--primary-strong);
   font-weight: 600;
 }
 
@@ -142,10 +148,6 @@ body {
   padding: 26px 30px 40px;
 }
 
-.tab-panel {
-  max-width: 860px;
-}
-
 .panel-head {
   display: flex;
   align-items: center;
@@ -158,6 +160,12 @@ body {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
+}
+
+.public-row {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
 }
 
 .hint {
@@ -262,7 +270,7 @@ input::placeholder {
 
 .btn.tonal {
   background: var(--primary-weak);
-  color: var(--primary);
+  color: var(--primary-strong);
 }
 
 .btn.tonal:hover:not(:disabled) {
@@ -292,12 +300,11 @@ input::placeholder {
   padding: 10px 14px;
   border-radius: var(--radius);
   margin-bottom: 18px;
-  max-width: 860px;
 }
 
 .alert.ok {
   background: var(--primary-weak);
-  color: var(--primary);
+  color: var(--primary-strong);
 }
 
 .alert.err {
@@ -395,7 +402,7 @@ input::placeholder {
 }
 
 .session-row-result.ok {
-  color: var(--primary);
+  color: var(--primary-strong);
 }
 
 .session-row-result.err {

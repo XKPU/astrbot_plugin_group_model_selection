@@ -1,11 +1,11 @@
 <template>
   <section class="tab-panel">
     <div class="panel-head">
-      <h2>管理员设置</h2>
+      <h2>管理员白名单</h2>
       <button type="button" class="btn tonal sm" @click="addRow">+ 添加条目</button>
     </div>
     <p class="hint">
-      可使用主命令的用户 UID（/sid 输出的 UID 行，即发送者 ID），每条一个；留空表示无人可用。查询命令不受此名单限制。
+      可使用主命令的用户 UID（发送者 ID）（/sid 输出的 UID 行），每条一个；留空表示无人可用。会话查询命令（/mstosid）不受此名单限制。
     </p>
     <div v-if="rows.length === 0" class="empty">暂无条目，点击右上角「+ 添加条目」。</div>
     <div v-for="(row, index) in rows" :key="index" class="uid-row">

@@ -4,7 +4,7 @@
       <h2>命令设置</h2>
     </div>
     <p class="hint">
-      主命令设置会话首选模型，无参数时清除该会话的独立模型配置；关闭主命令后仅能在配置页设置会话模型（适用于 UID 可能无法唯一标记或被伪造的平台）。其余命令可选启用，命令头与命令名均可自定义。
+      主命令设置会话首选模型，无参数时清除该会话的独立模型配置；关闭主命令后仅能在配置页设置会话模型（适用于 UID（发送者 ID）可能无法唯一标记或被伪造的平台）。其余命令可选启用，命令前缀与命令名均可自定义。
     </p>
     <label class="switch-row">
       <input type="checkbox" v-model="store.config.enable_main_command" @change="markDirty">
@@ -12,7 +12,7 @@
     </label>
     <div class="grid-2">
       <div class="field">
-        <label for="command_prefix">主命令头</label>
+        <label for="command_prefix">主命令前缀</label>
         <input id="command_prefix" v-model="store.config.command_prefix" type="text" placeholder="/" @input="markDirty">
       </div>
       <div class="field">
@@ -20,7 +20,7 @@
         <input id="command_name" v-model="store.config.command_name" type="text" placeholder="msto" @input="markDirty">
       </div>
       <div class="field">
-        <label for="sid_command_prefix">查询命令头</label>
+        <label for="sid_command_prefix">查询命令前缀</label>
         <input id="sid_command_prefix" v-model="store.config.sid_command_prefix" type="text" placeholder="/" @input="markDirty">
       </div>
       <div class="field">
@@ -28,7 +28,7 @@
         <input id="sid_command_name" v-model="store.config.sid_command_name" type="text" placeholder="mstosid" @input="markDirty">
       </div>
       <div class="field">
-        <label for="list_command_prefix">列表命令头</label>
+        <label for="list_command_prefix">列表命令前缀</label>
         <input id="list_command_prefix" v-model="store.config.list_command_prefix" type="text" placeholder="/" @input="markDirty">
       </div>
       <div class="field">
@@ -36,7 +36,7 @@
         <input id="list_command_name" v-model="store.config.list_command_name" type="text" placeholder="mstolist" @input="markDirty">
       </div>
       <div class="field">
-        <label for="curr_command_prefix">当前模型命令头</label>
+        <label for="curr_command_prefix">当前模型命令前缀</label>
         <input id="curr_command_prefix" v-model="store.config.curr_command_prefix" type="text" placeholder="/" @input="markDirty">
       </div>
       <div class="field">
@@ -63,7 +63,7 @@
     </div>
     <label class="switch-row">
       <input type="checkbox" v-model="store.config.enable_sid_command" @change="markDirty">
-      <span>启用查询命令（查询 UMO 与 UID，UID 供填入管理员白名单）</span>
+      <span>启用会话查询命令（/mstosid）（查询 UMO（会话 ID）与 UID（发送者 ID），UID 供填入管理员白名单）</span>
     </label>
     <label class="switch-row">
       <input type="checkbox" v-model="store.config.enable_list_command" @change="markDirty">
@@ -71,7 +71,7 @@
     </label>
     <label class="switch-row">
       <input type="checkbox" v-model="store.config.enable_curr_command" @change="markDirty">
-      <span>启用当前模型命令（查看当前会话使用的模型）</span>
+      <span>启用当前模型命令（查看当前会话模型）</span>
     </label>
     <div class="preview">
       <div v-for="line in previewLines" :key="line" class="preview-line">{{ line }}</div>
@@ -92,7 +92,7 @@ const previewLines = computed(() => {
       `${prefix}${String(cfg.command_name || "msto").trim() || "msto"} <别名或模型 ID>`,
     );
     lines.push(
-      `${prefix}${String(cfg.command_name || "msto").trim() || "msto"}（清除会话独立模型）`,
+      `${prefix}${String(cfg.command_name || "msto").trim() || "msto"}（清除会话模型设置）`,
     );
   }
   if (cfg.enable_sid_command) {

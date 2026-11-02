@@ -5,16 +5,16 @@
       <button type="button" class="btn tonal sm" @click="addModel">+ 添加模型</button>
     </div>
     <p class="hint">
-      选择主命令可用的模型（来自 AstrBot 提供商配置），可设置别名；未启用别名的模型直接用模型 ID 切换。列表命令仅显示已启用的条目。
+      选择主命令可用的模型（来自 AstrBot 提供商配置），可设置别名；未设置别名的模型直接用模型 ID（提供商 ID）切换。列表命令仅显示已启用的条目。
     </p>
-    <div v-if="models.length === 0" class="empty">暂无条目，点击右上角「+ 添加模型」。</div>
-    <div v-for="(model, index) in models" :key="model.__template_key || index" class="model-card">
+    <div v-if="models.length === 0" class="empty">暂无模型，点击右上角「+ 添加模型」。</div>
+    <div v-for="(model, index) in models" :key="model.__template_key || 'm-' + index" class="model-card">
       <div class="model-head">
         <label class="switch-row grow">
           <input
             type="checkbox"
             :checked="model.enabled !== false"
-            @change="toggleEnabled(index, $event)"
+            @change="setEnabled(index, $event)"
           >
           <span>启用</span>
         </label>
@@ -32,17 +32,25 @@
           >
         </div>
         <div class="field">
-          <label :for="'model-pid-' + index">模型 ID</label>
+          <label :for="'model-pid-' + index">模型 ID（提供商 ID）</label>
           <input
             :id="'model-pid-' + index"
             v-model="model.provider_id"
             type="text"
             list="provider-list"
-            placeholder="AstrBot 提供商 ID"
+            placeholder="AstrBot 提供商 ID（即模型 ID）"
             @input="markDirty"
           >
         </div>
       </div>
+      <label class="switch-row public-row">
+        <input
+          type="checkbox"
+          :checked="model.public === true"
+          @change="setPublic(index, $event)"
+        >
+        <span>允许非管理员选择</span>
+      </label>
     </div>
   </section>
 </template>
@@ -63,6 +71,7 @@ function addModel() {
     alias: "",
     provider_id: "",
     enabled: true,
+    public: false,
   });
   markDirty();
 }
@@ -72,8 +81,13 @@ function removeModel(index) {
   markDirty();
 }
 
-function toggleEnabled(index, event) {
+function setEnabled(index, event) {
   models.value[index].enabled = event.target.checked;
+  markDirty();
+}
+
+function setPublic(index, event) {
+  models.value[index].public = event.target.checked;
   markDirty();
 }
 </script>

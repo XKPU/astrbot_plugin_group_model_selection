@@ -6,7 +6,7 @@
     "hint": "关闭后聊天命令不再响应主命令，仅可在配置页设置会话模型（适用于 UID 无法唯一标记或可能被伪造的平台）。"
   },
   "command_prefix": {
-    "description": "命令头",
+    "description": "命令前缀",
     "type": "string",
     "default": "/",
     "hint": "聊天命令的前缀，默认 /。留空时回退为 /。"
@@ -18,10 +18,10 @@
     "hint": "设置本会话首选模型的命令，默认 msto。"
   },
   "sid_command_prefix": {
-    "description": "查询命令头",
+    "description": "查询命令前缀",
     "type": "string",
     "default": "/",
-    "hint": "会话查询命令（默认 /mstosid）的前缀，留空时按 / 处理。指令头为 / 时命令名不能为 sid（与 AstrBot 内置 /sid 冲突，将自动回退为 mstosid）。"
+    "hint": "会话查询命令（默认 /mstosid）的命令前缀，留空时按 / 处理。命令前缀为 / 时命令名不能为 sid（与 AstrBot 内置 /sid 冲突，将自动回退为 mstosid）。"
   },
   "sid_command_name": {
     "description": "查询命令名",
@@ -30,10 +30,10 @@
     "hint": "在 /sid 不可用时查询会话信息的命令名，默认 mstosid。"
   },
   "enable_sid_command": {
-    "description": "启用 /mstosid",
+    "description": "启用会话查询命令（/mstosid）",
     "type": "bool",
     "default": false,
-    "hint": "在 /sid 不可用时开启。命令输出会话 UMO 与 UID 等信息，UID 供管理员填入白名单，不受白名单限制。"
+    "hint": "在 AstrBot 内置 /sid 不可用时启用本命令；其输出会话 UMO（会话 ID）与 UID（发送者 ID），UID 供填入管理员白名单，且不受白名单限制。"
   },
   "enable_list_command": {
     "description": "启用模型列表命令",
@@ -42,10 +42,10 @@
     "hint": "开启后可用列表命令查看当前配置的可用模型。"
   },
   "list_command_prefix": {
-    "description": "列表命令头",
+    "description": "列表命令前缀",
     "type": "string",
     "default": "/",
-    "hint": "模型列表命令（默认 /mstolist）的前缀，留空时按 / 处理。"
+    "hint": "模型列表命令（默认 /mstolist）的命令前缀，留空时按 / 处理。"
   },
   "list_command_name": {
     "description": "列表命令名",
@@ -67,10 +67,10 @@
     "hint": "开启后可用当前模型命令查看本会话正在使用的模型。"
   },
   "curr_command_prefix": {
-    "description": "当前模型命令头",
+    "description": "当前模型命令前缀",
     "type": "string",
     "default": "/",
-    "hint": "当前模型命令（默认 /mstom）的前缀，留空时按 / 处理。"
+    "hint": "当前模型命令（默认 /mstom）的命令前缀，留空时按 / 处理。"
   },
   "curr_command_name": {
     "description": "当前模型命令名",
@@ -86,7 +86,7 @@
     "hint": "as_set=跟随设置时输入（别名或 ID），alias=仅别名，id=仅 ID，both=别名+ID。"
   },
   "allowed_uids": {
-    "description": "允许使用主命令的用户 UID 列表",
+    "description": "允许使用主命令的用户 UID（发送者 ID）列表",
     "type": "list",
     "default": [],
     "hint": "通过 /sid（或 /mstosid）输出的 UID（即发送者 ID）。列表为空时所有人都无法使用主命令。"
@@ -112,13 +112,19 @@
             "description": "模型 ID（提供商 ID）",
             "type": "string",
             "default": "",
-            "hint": "必须与 AstrBot 配置中的模型（提供商）ID 完全一致。"
+            "hint": "必须与 AstrBot 配置中的模型 ID（提供商 ID）完全一致。"
           },
           "enabled": {
             "description": "启用此条目",
             "type": "bool",
             "default": true,
             "hint": "关闭后此条目不参与匹配。"
+          },
+          "public": {
+            "description": "允许非管理员选择",
+            "type": "bool",
+            "default": false,
+            "hint": "开启后，管理员白名单外的非管理员也能用主命令切换到此模型，列表命令对非管理员也只显示勾选的条目。"
           }
         }
       }
