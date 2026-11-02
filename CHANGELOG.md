@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.0.2] - 2026-11-02
+
+### 修复
+
+- 修正在 OneBot 适配器下消息已实际送达却仍记录错误日志的问题：等待自身消息回执（waitForSelfEcho）超时未收到回执时会抛出 `ActionFailed`，该异常经 `event.send()` 传播到 `on_message` 的兜底 `except` 分支，导致即便内容已返回，日志仍记录 ERROR 级 traceback，特定情况下还会向聊天再推送一条「命令处理失败」提示。现于回复发送处捕获该异常并仅记为 warning。
+
 ## [v1.0.1] - 2026-11-02
 
 ### 新增
@@ -29,5 +35,6 @@
 - `enable_main_command` 配置项，关闭后主命令不响应，仅可通过配置页管理会话模型。
 - Web API 读写配置、查询模型列表、管理会话模型偏好。
 
+[v1.0.2]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/v1.0.1...v1.0.2
 [v1.0.1]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/v1.0.0...v1.0.1
 [v1.0.0]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/cbf9c01c7a8fa547e5a44ac470a47b9d43ebb408...v1.0.0

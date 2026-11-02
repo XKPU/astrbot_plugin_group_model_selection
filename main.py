@@ -271,9 +271,20 @@ class GroupModelSelectionPlugin(Star):
         return str(event.get_sender_id() or "") in allowed
 
     async def _reply(self, event: AstrMessageEvent, text: str) -> None:
-        """Send a plain-text reply and stop event propagation."""
+        """Send a plain-text reply and stop event propagation.
+
+        Send failures are logged and swallowed: some OneBot adapters raise
+        ActionFailed on self-echo timeout even though the message was
+        delivered.
+        """
         event.stop_event()
-        await event.send(event.plain_result(text))
+        try:
+            await event.send(event.plain_result(text))
+        except Exception as exc:
+            logger.warning(
+                "astrbot_plugin_group_model_selection: 回复发送失败（消息可能已送达）: %s",
+                exc,
+            )
 
     @filter.event_message_type(filter.EventMessageType.ALL)
     async def on_message(self, event: AstrMessageEvent, *args, **kwargs):
