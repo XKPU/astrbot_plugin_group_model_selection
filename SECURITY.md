@@ -41,7 +41,7 @@
 本项目基于 **GNU Affero General Public License v3.0 (AGPL-3.0)** 发布。
 
 ```
-
+astrbot_plugin_group_model_selection - 会话模型选择
 Copyright (C) 2025 K_PU
 
 This program is free software: you can redistribute it and/or modify

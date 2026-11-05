@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from astrbot.api import AstrBotConfig, logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register
@@ -25,6 +27,7 @@ class GroupModelSelectionPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig | None = None):
         super().__init__(context)
         self.config = config
+        self._skip_session_sync_once = False
 
     def _version(self) -> str:
         """Return the plugin version from the star registry."""
@@ -35,8 +38,44 @@ class GroupModelSelectionPlugin(Star):
         """Prepare the plugin: register web APIs and stamp template keys."""
         self._register_web_apis()
         if self.config is not None:
-            if web_config.ensure_template_keys(self.config):
+            changed = web_config.ensure_template_keys(self.config)
+            if web_config.ensure_model_uuids(self.config):
+                changed = True
+            if changed:
                 self.config.save_config()
+            await self._sync_sessions_on_load()
+
+    async def _sync_sessions_on_load(self) -> None:
+        """Detect model list changes made outside the config view.
+
+        Compares the persisted identity snapshot with the current model
+        list (covering declarative-page saves and manual file edits, both
+        followed by a plugin reload), syncs affected sessions, then saves
+        the new snapshot.
+        """
+        snapshot = web_config.load_model_snapshot()
+        models = self.config.get("models") or []
+        new_snapshot = web_config.entries_snapshot(models)
+        try:
+            if snapshot is None:
+                web_config.save_model_snapshot(new_snapshot)
+                return
+            if snapshot == new_snapshot:
+                return
+            if self._skip_session_sync_once:
+                self._skip_session_sync_once = False
+                web_config.save_model_snapshot(new_snapshot)
+                return
+            from astrbot.core import sp
+
+            changes = await provider_ops.sync_sessions_after_change(
+                self.context, snapshot, new_snapshot, sp
+            )
+            for change in changes:
+                logger.info("模型变更同步会话: %s", change)
+            web_config.save_model_snapshot(new_snapshot)
+        except Exception as exc:
+            logger.error("模型变更同步会话失败: %s", exc)
 
     def _register_web_apis(self) -> None:
         """Register the config view endpoints (idempotent across reloads)."""
@@ -85,8 +124,25 @@ class GroupModelSelectionPlugin(Star):
         )
 
     async def _web_get_config(self) -> dict:
-        """Return the full plugin configuration for the config view."""
-        return {"status": "ok", "data": {"config": dict(self.config)}}
+        """Return the plugin configuration read fresh from disk.
+
+        The config file is the source of truth (the declarative settings
+        page and manual edits write it directly), so the view reload must
+        re-read it instead of serving the in-memory copy.
+        """
+        disk_config: dict | None = None
+        config_path = getattr(self.config, "config_path", None)
+        if config_path:
+            try:
+                with open(config_path, encoding="utf-8-sig") as handle:
+                    loaded = json.load(handle)
+                if isinstance(loaded, dict):
+                    disk_config = loaded
+            except (OSError, ValueError) as exc:
+                logger.warning("读取配置文件失败，回退内存配置: %s", exc)
+        if disk_config is None:
+            disk_config = dict(self.config)
+        return {"status": "ok", "data": {"config": disk_config}}
 
     async def _web_save_config(self) -> dict:
         """Apply the submitted configuration and persist it.
@@ -146,11 +202,28 @@ class GroupModelSelectionPlugin(Star):
         )
         next_config["models"] = web_config.sanitize_models(config.get("models"))
 
+        old_snapshot = web_config.entries_snapshot((self.config or {}).get("models"))
+        new_snapshot = web_config.entries_snapshot(next_config["models"])
+
         self.config.update(next_config)
         self.config.save_config()
         web_config.log_config_update(web_request.username)
+        self._skip_session_sync_once = True
         await self.initialize()
-        return {"status": "ok", "data": {"config": dict(self.config)}}
+        session_changes: list[str] = []
+        try:
+            from astrbot.core import sp
+
+            session_changes = await provider_ops.sync_sessions_after_change(
+                self.context, old_snapshot, new_snapshot, sp
+            )
+        except Exception as exc:
+            logger.error("保存后同步会话失败: %s", exc)
+        web_config.save_model_snapshot(new_snapshot)
+        return {
+            "status": "ok",
+            "data": {"config": dict(self.config), "session_changes": session_changes},
+        }
 
     async def _web_list_providers(self) -> dict:
         """List the models configured in AstrBot for the config view."""
@@ -177,7 +250,7 @@ class GroupModelSelectionPlugin(Star):
                 "umo", None, provider_ops.PROVIDER_PREF_KEY
             )
         except Exception as exc:
-            logger.error("astrbot_plugin_group_model_selection: 枚举会话失败: %s", exc)
+            logger.error("枚举会话失败: %s", exc)
             return {"status": "error", "message": "读取会话列表失败。", "data": {}}
         sessions = []
         for pref in preferences:
@@ -238,7 +311,7 @@ class GroupModelSelectionPlugin(Star):
                 )
         except Exception as exc:
             logger.error(
-                "astrbot_plugin_group_model_selection: 会话 %s 设置 %s 失败: %s",
+                "会话 %s 设置 %s 失败: %s",
                 umo,
                 token,
                 exc,
@@ -282,7 +355,7 @@ class GroupModelSelectionPlugin(Star):
             await event.send(event.plain_result(text))
         except Exception as exc:
             logger.warning(
-                "astrbot_plugin_group_model_selection: 回复发送失败（消息可能已送达）: %s",
+                "回复发送失败（消息可能已送达）: %s",
                 exc,
             )
 
@@ -334,7 +407,7 @@ class GroupModelSelectionPlugin(Star):
                 return
             await self._run_model_command(event, parsed["args"], is_admin)
         except Exception as exc:
-            logger.exception("astrbot_plugin_group_model_selection: 处理失败: %s", exc)
+            logger.exception("处理失败: %s", exc)
             if woken:
                 await self._reply(event, "命令处理失败，请稍后重试。")
 
@@ -387,7 +460,7 @@ class GroupModelSelectionPlugin(Star):
             )
         except Exception as exc:
             logger.error(
-                "astrbot_plugin_group_model_selection: 查询当前模型失败(umo=%s): %s",
+                "查询当前模型失败(umo=%s): %s",
                 event.unified_msg_origin,
                 exc,
             )
@@ -427,7 +500,7 @@ class GroupModelSelectionPlugin(Star):
             await provider_ops.switch_provider(self.context, umo, entry["provider_id"])
         except Exception as exc:
             logger.error(
-                "astrbot_plugin_group_model_selection: 切换到 %s(umo=%s) 失败: %s",
+                "切换到 %s(umo=%s) 失败: %s",
                 entry["provider_id"],
                 umo,
                 exc,

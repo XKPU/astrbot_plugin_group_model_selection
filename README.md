@@ -78,7 +78,7 @@
 | `curr_output_mode` | string | `as_set` | 当前模型输出方式：`as_set` 跟随设置时 / `alias` / `id` / `both` |
 | `enable_curr_command` | bool | `false` | 是否启用当前模型命令 |
 | `allowed_uids` | list | `[]` | 允许使用主命令的用户 UID 列表（发送者 ID），空列表表示无人可用 |
-| `models` | template_list | `[]` | 可用模型条目：`alias`（别名，可空）、`provider_id`（模型 ID（提供商 ID），必填）、`enabled`（启用开关）、`public`（允许非管理员选择） |
+| `models` | template_list | `[]` | 可用模型条目：`alias`（别名，可空）、`provider_id`（模型 ID（提供商 ID），必填）、`enabled`（启用开关）、`public`（允许非管理员选择）；每条目由系统自动分配 UUID（`uuid`），用于变更后同步会话 |
 
 ## 权限说明
 
@@ -93,7 +93,7 @@
 - 管理员白名单（UID）的增删管理
 - 可用模型的挑选、别名设置、启用开关与「允许非管理员选择」勾选
 - 已设置首选模型的会话列表查看、设置与清除
-- 所有配置通过 Web API 读写，效果与手动编辑配置文件一致
+- 所有配置通过 Web API 读写，效果与手动编辑配置文件一致；「重新加载」按钮重新读取磁盘配置文件
 
 右侧导航支持快速跳转，并跟随面板语言与主题。
 
@@ -115,13 +115,14 @@ vue/               # Vue 源码与构建产物
 - 命令不走 AstrBot 的指令注册，而是通过事件监听手动匹配，因此不会与内置 `/provider` 等指令冲突。
 - 切换模型调用 AstrBot 的 `provider_manager.set_provider(..., umo=会话 UMO（会话 ID）)`，仅影响当前会话的后续对话。
 - 「跟随设置时」输出依赖切换时记录的原始输入（与会话偏好一同存储）；清除模型设置时一并移除。
+- 可用模型条目携带自动生成的 UUID 作为身份标识（旧版配置加载时自动补齐）：移除条目时，正在使用该模型的会话自动恢复默认模型；修改别名时会话绑定记录同步更新；修改提供商 ID 时会话自动迁移到新模型。该机制同时覆盖声明式配置页保存与手动编辑配置文件后重载插件两种路径。
 
 ## 许可证
 
 本项目基于 **GNU Affero General Public License v3.0 (AGPL-3.0)** 发布。
 
 ```
-astrbot_plugin_group_model_selection - 群聊模型选择
+astrbot_plugin_group_model_selection - 会话模型选择
 Copyright (C) 2025 K_PU
 
 This program is free software: you can redistribute it and/or modify

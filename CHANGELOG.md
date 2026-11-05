@@ -1,5 +1,21 @@
 # Changelog
 
+## [v1.0.3] - 2026-11-05
+
+### 新增
+
+- 可用模型条目自动分配 UUID（`models[].uuid`），旧版配置首次加载时自动补齐，作为条目身份标识。
+- 模型条目变更后自动同步会话：移除某条目时，使用该模型的会话自动恢复默认模型；修改别名时会话绑定的输入记录同步更新；修改提供商 ID 时会话自动迁移到新模型（迁移失败则恢复默认）。声明式配置页保存与手动编辑配置文件后重载插件均会触发。
+- 可视化配置页保存后提示同步的会话数量。
+
+### 变更
+
+- 插件日志去掉正文中手写的插件名前缀，统一由 AstrBot 标准日志机制自动附加 `[插件名]` 标签。
+
+### 修复
+
+- 可视化配置页「重新加载」现在重新读取磁盘配置文件（此前返回内存副本）。
+
 ## [v1.0.2] - 2026-11-02
 
 ### 修复
@@ -35,6 +51,7 @@
 - `enable_main_command` 配置项，关闭后主命令不响应，仅可通过配置页管理会话模型。
 - Web API 读写配置、查询模型列表、管理会话模型偏好。
 
+[v1.0.3]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/v1.0.2...v1.0.3
 [v1.0.2]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/v1.0.1...v1.0.2
 [v1.0.1]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/v1.0.0...v1.0.1
 [v1.0.0]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/cbf9c01c7a8fa547e5a44ac470a47b9d43ebb408...v1.0.0

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from astrbot.api import logger
 from astrbot.core.provider.entities import ProviderType
 
 PROVIDER_PREF_KEY = "provider_perf_chat_completion"
@@ -137,6 +138,117 @@ async def reset_provider(context: Any, umo: str) -> None:
 
     await sp.session_remove(umo, PROVIDER_PREF_KEY)
     await sp.session_remove(umo, LAST_INPUT_KEY)
+
+
+async def sync_sessions_after_change(
+    context: Any,
+    old_snapshot: dict[str, dict[str, str]],
+    new_snapshot: dict[str, dict[str, str]],
+    sp: Any,
+) -> list[str]:
+    """Adjust sessions whose preferred model was removed or edited.
+
+    Args:
+        context: The plugin context, used to switch providers.
+        old_snapshot: ``{uuid: {alias, provider_id}}`` saved before the change.
+        new_snapshot: The same mapping after the change.
+        sp: Shared preferences object (required, injectable for tests).
+
+    Returns:
+        Human-readable descriptions of the sessions that were adjusted.
+    """
+    if not old_snapshot or not sp:
+        return []
+    try:
+        prefs = await sp.range_get_async("umo", None, PROVIDER_PREF_KEY)
+    except Exception:
+        logger.error("sync_sessions_after_change: 枚举会话偏好失败")
+        return []
+
+    changes: list[str] = []
+    for pref in prefs:
+        umo = getattr(pref, "scope_id", None)
+        if not umo:
+            continue
+        action = await _sync_single_session(
+            context, sp, umo, old_snapshot, new_snapshot
+        )
+        if action:
+            changes.append(f"{umo}: {action}")
+    return changes
+
+
+async def _sync_single_session(
+    context: Any,
+    sp: Any,
+    umo: str,
+    old_snapshot: dict[str, dict[str, str]],
+    new_snapshot: dict[str, dict[str, str]],
+) -> str | None:
+    """Rebind, migrate, or reset one session; returns a description or None."""
+    token = await sp.session_get(umo, LAST_INPUT_KEY, None)
+    owner = _find_owner_uuid(token, old_snapshot)
+
+    if owner is None:
+        current_id = await sp.session_get(umo, PROVIDER_PREF_KEY, None)
+        if not current_id:
+            return None
+        owners = [
+            uuid
+            for uuid, entry in old_snapshot.items()
+            if entry.get("provider_id") == current_id
+        ]
+        owner = owners[0] if len(owners) == 1 else None
+        if owner is None:
+            return None
+
+    if owner not in new_snapshot:
+        await sp.session_remove(umo, PROVIDER_PREF_KEY)
+        await sp.session_remove(umo, LAST_INPUT_KEY)
+        return "会话使用的模型已被移除，已恢复默认模型"
+
+    new_entry = new_snapshot[owner]
+    old_entry = old_snapshot[owner]
+    alias_changed = new_entry["alias"] != old_entry["alias"]
+    provider_changed = new_entry["provider_id"] != old_entry["provider_id"]
+
+    if alias_changed:
+        if new_entry["alias"]:
+            await sp.session_put(umo, LAST_INPUT_KEY, new_entry["alias"])
+        else:
+            await sp.session_remove(umo, LAST_INPUT_KEY)
+
+    if provider_changed:
+        try:
+            await context.provider_manager.set_provider(
+                provider_id=new_entry["provider_id"],
+                provider_type=ProviderType.CHAT_COMPLETION,
+                umo=umo,
+            )
+        except Exception:
+            logger.error("sync_sessions_after_change: 迁移会话 %s 失败", umo)
+            await sp.session_remove(umo, PROVIDER_PREF_KEY)
+            await sp.session_remove(umo, LAST_INPUT_KEY)
+            return "会话迁移至新模型失败，已恢复默认模型"
+        return "会话已迁移至修改后的模型"
+
+    return "会话绑定的别名已同步" if alias_changed else None
+
+
+def _find_owner_uuid(
+    token: Any,
+    old_snapshot: dict[str, dict[str, str]],
+) -> str | None:
+    """Resolve which model entry a session was bound to before the change."""
+    if token:
+        lowered = str(token).lower()
+        for uuid, entry in old_snapshot.items():
+            if entry.get("alias", "").lower() == lowered:
+                return uuid
+        for uuid, entry in old_snapshot.items():
+            if entry.get("provider_id") == token:
+                return uuid
+    return None
 
 
 async def session_model_info(context: Any, umo: str, config: Any) -> dict[str, Any]:

@@ -101,11 +101,21 @@ export async function saveConfig() {
     if (resp && resp.status === "error") {
       throw new Error(resp.message || "保存失败。");
     }
+    const savedWrap = pick(resp);
+    const changes =
+      savedWrap && Array.isArray(savedWrap.session_changes)
+        ? savedWrap.session_changes
+        : [];
     const freshWrap = pick(await apiGet("config"));
     const fresh = freshWrap && freshWrap.config ? freshWrap.config : freshWrap;
     if (fresh && typeof fresh === "object") applyConfig(fresh);
     clearDirty();
-    showAlert("ok", "配置已保存。");
+    showAlert(
+      "ok",
+      changes.length
+        ? `配置已保存。已同步 ${changes.length} 个会话。`
+        : "配置已保存。",
+    );
   } catch (err) {
     showAlert("err", err.message || String(err));
   } finally {
