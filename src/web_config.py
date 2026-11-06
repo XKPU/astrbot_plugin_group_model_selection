@@ -11,7 +11,7 @@ from astrbot.api import logger
 
 TEMPLATE_KEY = "model"
 MODEL_SNAPSHOT_NAME = ".model_snapshot.json"
-PLUGIN_ROOT = Path(__file__).resolve().parent.parent
+PLUGIN_NAME = "astrbot_plugin_group_model_selection"
 
 
 def ensure_template_keys(config: dict[str, Any]) -> bool:
@@ -112,6 +112,17 @@ def entries_snapshot(models: Any) -> dict[str, dict[str, str]]:
     return snapshot
 
 
+def _snapshot_path() -> Path:
+    """Return the snapshot file path under the plugin data directory.
+
+    Uses ``StarTools.get_data_dir`` (data/plugin_data/<plugin_name>) so
+    persisted state survives plugin reinstalls and stays auditable.
+    """
+    from astrbot.api.star import StarTools
+
+    return StarTools.get_data_dir(PLUGIN_NAME) / MODEL_SNAPSHOT_NAME
+
+
 def load_model_snapshot() -> dict[str, dict[str, str]] | None:
     """Load the persisted model identity snapshot.
 
@@ -119,7 +130,7 @@ def load_model_snapshot() -> dict[str, dict[str, str]] | None:
         The saved snapshot mapping, or ``None`` when absent or unreadable
         (treated as the first run).
     """
-    path = PLUGIN_ROOT / MODEL_SNAPSHOT_NAME
+    path = _snapshot_path()
     if not path.exists():
         return None
     try:
@@ -131,13 +142,14 @@ def load_model_snapshot() -> dict[str, dict[str, str]] | None:
 
 
 def save_model_snapshot(snapshot: dict[str, dict[str, str]]) -> None:
-    """Persist the model identity snapshot next to the plugin.
+    """Persist the model identity snapshot in the plugin data directory.
 
     Args:
         snapshot: The ``{uuid: {alias, provider_id}}`` mapping to store.
     """
-    path = PLUGIN_ROOT / MODEL_SNAPSHOT_NAME
+    path = _snapshot_path()
     try:
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
             json.dumps(snapshot, ensure_ascii=False, indent=2), encoding="utf-8"
         )
