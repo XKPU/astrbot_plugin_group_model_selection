@@ -60,6 +60,7 @@
 - Web API 读写配置、查询模型列表、管理会话模型偏好。
 
 [v1.0.4]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/v1.0.3...v1.0.4
+[v1.0.4]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/v1.0.3...v1.0.4
 [v1.0.3]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/v1.0.2...v1.0.3
 [v1.0.2]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/v1.0.1...v1.0.2
 [v1.0.1]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/v1.0.0...v1.0.1
