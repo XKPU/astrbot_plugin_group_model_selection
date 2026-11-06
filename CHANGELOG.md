@@ -22,6 +22,7 @@
 
 - 可视化配置页「重新加载」现在重新读取磁盘配置文件（此前返回内存副本）。
 - 模型快照改存 `data/plugin_data/astrbot_plugin_group_model_selection/`（标准插件数据目录），不再写入插件源码目录；旧位置已有的快照在加载时自动迁移。
+- 模型快照改存 `data/plugin_data/astrbot_plugin_group_model_selection/`（标准插件数据目录），不再写入插件源码目录；旧位置已有的快照在加载时自动迁移。
 
 ## [v1.0.2] - 2026-11-02
 
