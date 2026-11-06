@@ -11,7 +11,9 @@ from astrbot.api import logger
 
 TEMPLATE_KEY = "model"
 MODEL_SNAPSHOT_NAME = ".model_snapshot.json"
-PLUGIN_ROOT = Path(__file__).resolve().parent.parent
+PLUGIN_NAME = "astrbot_plugin_group_model_selection"
+# Legacy snapshot location: the plugin source directory itself.
+_LEGACY_PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 
 
 def ensure_template_keys(config: dict[str, Any]) -> bool:
@@ -112,14 +114,41 @@ def entries_snapshot(models: Any) -> dict[str, dict[str, str]]:
     return snapshot
 
 
+def _snapshot_path() -> Path:
+    """Return the snapshot file path under the plugin data directory.
+
+    Uses ``StarTools.get_data_dir`` (data/plugin_data/<plugin_name>) so
+    persisted state survives plugin reinstalls and stays auditable.
+    """
+    try:
+        from astrbot.api.star import StarTools
+
+        return StarTools.get_data_dir(PLUGIN_NAME) / MODEL_SNAPSHOT_NAME
+    except Exception as exc:
+        logger.warning("获取插件数据目录失败，回退插件根目录: %s", exc)
+        return _LEGACY_PLUGIN_ROOT / MODEL_SNAPSHOT_NAME
+
+
 def load_model_snapshot() -> dict[str, dict[str, str]] | None:
     """Load the persisted model identity snapshot.
+
+    Migrates a snapshot left in the legacy plugin-source location on the
+    first load after upgrading.
 
     Returns:
         The saved snapshot mapping, or ``None`` when absent or unreadable
         (treated as the first run).
     """
-    path = PLUGIN_ROOT / MODEL_SNAPSHOT_NAME
+    path = _snapshot_path()
+    legacy_path = _LEGACY_PLUGIN_ROOT / MODEL_SNAPSHOT_NAME
+    if not path.exists() and legacy_path.exists():
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            legacy_path.replace(path)
+            logger.info("已迁移模型快照至插件数据目录: %s", path)
+        except OSError as exc:
+            logger.warning("迁移模型快照失败: %s", exc)
+            path = legacy_path
     if not path.exists():
         return None
     try:
@@ -131,13 +160,14 @@ def load_model_snapshot() -> dict[str, dict[str, str]] | None:
 
 
 def save_model_snapshot(snapshot: dict[str, dict[str, str]]) -> None:
-    """Persist the model identity snapshot next to the plugin.
+    """Persist the model identity snapshot in the plugin data directory.
 
     Args:
         snapshot: The ``{uuid: {alias, provider_id}}`` mapping to store.
     """
-    path = PLUGIN_ROOT / MODEL_SNAPSHOT_NAME
+    path = _snapshot_path()
     try:
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
             json.dumps(snapshot, ensure_ascii=False, indent=2), encoding="utf-8"
         )

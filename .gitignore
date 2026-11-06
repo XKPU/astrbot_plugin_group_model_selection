@@ -212,3 +212,4 @@ astrbot_plugin_group_model_selection.zip
 vue/node_modules/
 vue/.build-tmp/
 vue/.npm-cache/
+vue/build-nospawn.mjs
