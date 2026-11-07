@@ -17,9 +17,9 @@ PLUGIN_NAME = "astrbot_plugin_group_model_selection"
 
 @register(
     "astrbot_plugin_group_model_selection",
-    "u-eptm",
+    "K_PU",
     "通过 /msto 按别名或模型 ID 设置会话首选模型",
-    "1.0.4",
+    "1.0.5",
 )
 class GroupModelSelectionPlugin(Star):
     """Per-session model selection via chat commands and a config view."""
@@ -97,6 +97,18 @@ class GroupModelSelectionPlugin(Star):
             self._web_list_providers,
             ["GET"],
             "列出 AstrBot 已配置的提供商（模型）",
+        )
+        self.context.register_web_api(
+            f"/{PLUGIN_NAME}/umos",
+            self._web_list_umos,
+            ["GET"],
+            "列出已知会话（用于会话选择器）",
+        )
+        self.context.register_web_api(
+            f"/{PLUGIN_NAME}/senders",
+            self._web_search_senders,
+            ["GET"],
+            "搜索发送者（用于用户选择器）",
         )
         self.context.register_web_api(
             f"/{PLUGIN_NAME}/sessions",
@@ -240,6 +252,72 @@ class GroupModelSelectionPlugin(Star):
                 }
             )
         return {"status": "ok", "data": {"providers": providers}}
+
+    async def _web_list_umos(self) -> dict:
+        """List known sessions for the session picker.
+
+        Mirrors the dashboard session selector: sessions are sourced from
+        the sender/alias tables, latest activity first.
+        """
+        db = self.context.get_db()
+        try:
+            records = await db.get_umo_senders(search="", limit=100)
+        except Exception as exc:
+            logger.error("枚举已知会话失败: %s", exc)
+            return {"status": "error", "message": "读取会话列表失败。", "data": {}}
+        umos: dict[str, dict] = {}
+        for sender, alias in records:
+            umo = str(getattr(sender, "umo", "") or "")
+            if not umo or umo in umos:
+                continue
+            auto_name = str(getattr(alias, "auto_name", "") or "")
+            user_alias = str(getattr(alias, "user_alias", "") or "")
+            umos[umo] = {
+                "umo": umo,
+                "platform": umo.split(":", 1)[0],
+                "sender_id": str(getattr(sender, "sender_id", "") or ""),
+                "sender_name": str(getattr(sender, "sender_name", "") or ""),
+                "auto_name": auto_name,
+                "user_alias": user_alias,
+                "display_name": user_alias or auto_name or umo,
+            }
+        return {"status": "ok", "data": {"umos": list(umos.values())}}
+
+    async def _web_search_senders(self) -> dict:
+        """Search senders for the user picker.
+
+        Query parameters:
+            search: Fuzzy keyword matched against sender and alias names.
+            limit: Max rows (1-100).
+            sender_ids: Repeatable; resolves names for the given IDs.
+        """
+        query = web_request.query
+        search = str(query.get("search", "") or "").strip()
+        raw_limit = query.get("limit", 50, int) or 50
+        limit = max(1, min(raw_limit, 100))
+        sender_ids = query.getlist("sender_ids") + query.getlist("sender_ids[]")
+        sender_ids = [str(item) for item in sender_ids if str(item).strip()]
+        try:
+            db = self.context.get_db()
+            records = await db.get_umo_senders(
+                search=search,
+                limit=limit,
+                sender_ids=sender_ids or None,
+            )
+        except Exception as exc:
+            logger.error("搜索发送者失败: %s", exc)
+            return {"status": "error", "message": "读取用户列表失败。", "data": {}}
+        senders = []
+        for sender, alias in records:
+            umo = str(getattr(sender, "umo", "") or "")
+            senders.append(
+                {
+                    "sender_id": str(getattr(sender, "sender_id", "") or ""),
+                    "sender_name": str(getattr(sender, "sender_name", "") or ""),
+                    "platform": umo.split(":", 1)[0] if umo else "",
+                }
+            )
+        return {"status": "ok", "data": {"senders": senders}}
 
     async def _web_list_sessions(self) -> dict:
         """List every session that currently has a preferred model set."""

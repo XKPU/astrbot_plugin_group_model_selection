@@ -7,7 +7,8 @@
     <p class="hint">
       可使用主命令的用户 UID（发送者 ID）（/sid 输出的 UID 行），每条一个；留空表示无人可用。会话查询命令（/mstosid）不受此名单限制。
     </p>
-    <div v-if="rows.length === 0" class="empty">暂无条目，点击右上角「+ 添加条目」。</div>
+    <UserPicker v-model="picked" />
+    <div v-if="rows.length === 0" class="empty">暂无条目，点击右上角「+ 添加条目」或使用上方选择器。</div>
     <div v-for="(row, index) in rows" :key="index" class="uid-row">
       <input
         v-model="rows[index]"
@@ -23,11 +24,21 @@
 <script setup>
 import { computed } from "vue";
 import { store, markDirty } from "../store.js";
+import UserPicker from "../components/UserPicker.vue";
 
 const rows = computed({
   get: () => store.config.allowed_uids,
   set: (value) => {
     store.config.allowed_uids = value;
+  },
+});
+
+const picked = computed({
+  get: () => rows.value.filter((item) => item.trim() !== ""),
+  set: (value) => {
+    const blanks = rows.value.filter((item) => item.trim() === "");
+    rows.value = [...value, ...blanks];
+    markDirty();
   },
 });
 

@@ -1,5 +1,19 @@
 # Changelog
 
+## [v1.0.5] - 2026-11-07
+
+### 新增
+
+- 可视化配置页三个标签页的交互增强：
+  - 「可用模型设置」支持拖动卡片排序（拖动后点侧栏「保存配置」生效）。
+  - 「管理员白名单」新增「选择用户」对话框，可从 AstrBot 已知的发送者中搜索并勾选 UID，仍保留手动输入。
+  - 「会话模型」新增「选择」对话框，可从 AstrBot 已知的会话中挑选 UMO 自动填入，仍保留手动输入。
+- 配置页新增两个数据端点：`/umos`（已知会话枚举）与 `/senders`（发送者搜索 / 按 ID 回查），数据源自 AstrBot 会话与别名表。
+
+### 修复
+
+- 可视化配置页「会话模型」标签修改首选模型后保存按钮不出现：该输入框此前未接入脏状态跟踪；且会话行原本是标签页本地状态，全局「保存配置」不会应用它们。现在所有会话修改（新建 / 删除条目、修改首选模型、恢复默认）统一接入侧栏「保存配置」流——修改后出现保存按钮，点击保存时逐行应用变更的会话，提示中显示应用条数；「重新加载 / 取消编辑」同步刷新会话列表。
+
 ## [v1.0.4] - 2026-11-06
 
 ### 修复
@@ -21,8 +35,6 @@
 ### 修复
 
 - 可视化配置页「重新加载」现在重新读取磁盘配置文件（此前返回内存副本）。
-- 模型快照改存 `data/plugin_data/astrbot_plugin_group_model_selection/`（标准插件数据目录），不再写入插件源码目录；旧位置已有的快照在加载时自动迁移。
-- 模型快照改存 `data/plugin_data/astrbot_plugin_group_model_selection/`（标准插件数据目录），不再写入插件源码目录；旧位置已有的快照在加载时自动迁移。
 
 ## [v1.0.2] - 2026-11-02
 
@@ -59,7 +71,7 @@
 - `enable_main_command` 配置项，关闭后主命令不响应，仅可通过配置页管理会话模型。
 - Web API 读写配置、查询模型列表、管理会话模型偏好。
 
-[v1.0.4]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/v1.0.3...v1.0.4
+[v1.0.5]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/v1.0.4...v1.0.5
 [v1.0.4]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/v1.0.3...v1.0.4
 [v1.0.3]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/v1.0.2...v1.0.3
 [v1.0.2]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/v1.0.1...v1.0.2

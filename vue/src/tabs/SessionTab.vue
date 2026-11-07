@@ -11,26 +11,23 @@
     <div v-for="(row, index) in rows" :key="row.key" class="session-row">
       <div class="session-head">
         <span class="session-title">{{ row.umo || "新条目" }}</span>
-        <button type="button" class="btn tonal sm" :disabled="row.busy" @click="applyRow(index)">
-          应用
-        </button>
-        <button type="button" class="btn tonal sm" :disabled="row.busy" @click="clearRow(index)">
-        清除模型设置
-        </button>
-        <button type="button" class="btn danger-text sm" :disabled="row.busy" @click="removeRow(index)">
+        <button type="button" class="btn danger-text sm" @click="removeRow(index)">
           删除
         </button>
       </div>
       <div class="field">
         <label :for="'session-umo-' + row.key">UMO（会话 ID）</label>
-        <input
-          :id="'session-umo-' + row.key"
-          v-model="row.umo"
-          class="session-umo-input"
-          type="text"
-          placeholder="平台:UserId:SessionId"
-          @input="markDirty"
-        >
+        <div class="picker-inline">
+          <input
+            :id="'session-umo-' + row.key"
+            v-model="row.umo"
+            class="session-umo-input"
+            type="text"
+            placeholder="平台:UserId:SessionId"
+            @input="markDirty"
+          >
+          <UmoPicker @select="chooseUmo(row, $event)" />
+        </div>
       </div>
       <div class="field">
         <label :for="'session-model-' + row.key">首选模型（别名或模型 ID，留空 = 恢复默认）</label>
@@ -40,7 +37,17 @@
           type="text"
           list="provider-list"
           placeholder="如 glm-5.2"
+          @input="markDirty"
         >
+        <button
+          v-if="row.token"
+          type="button"
+          class="btn ghost sm"
+          :disabled="store.busy"
+          @click="clearRow(index)"
+        >
+          恢复默认（清除该字段）
+        </button>
       </div>
       <div v-if="row.result" class="session-row-result" :class="row.ok ? 'ok' : 'err'">{{ row.result }}</div>
     </div>
@@ -49,11 +56,22 @@
 
 <script setup>
 import { onMounted, ref } from "vue";
-import { apiGet, apiPost, pick } from "../sdk.js";
-import { store } from "../store.js";
+import { apiGet, pick } from "../sdk.js";
+import UmoPicker from "../components/UmoPicker.vue";
+import {
+  store,
+  markDirty,
+  snapshotSessions,
+  markSessionsSaved,
+} from "../store.js";
 
 const rows = ref([]);
 let rowKey = 0;
+
+function chooseUmo(row, umo) {
+  row.umo = umo;
+  markDirty();
+}
 
 function makeRow(umo, asSet) {
   return {
@@ -64,6 +82,11 @@ function makeRow(umo, asSet) {
     result: "",
     ok: false,
   };
+}
+
+function syncStore() {
+  store.sessionRows = rows.value;
+  markSessionsSaved();
 }
 
 async function loadSessions() {
@@ -81,71 +104,41 @@ async function loadSessions() {
       const info = details[i];
       return makeRow(umo, info ? info.as_set || info.alias || info.provider_id || "" : "");
     });
+    syncStore();
   } catch (err) {
     rows.value = [];
   }
 }
 
+/* Registered as store.reloadSessions so 重新加载/取消编辑 refresh rows too. */
+async function reloadSessions() {
+  await loadSessions();
+}
+
 function addRow() {
   rows.value.push(makeRow("", ""));
+  syncStore();
 }
 
 function removeRow(index) {
   rows.value.splice(index, 1);
+  syncStore();
+  markDirty();
 }
 
-async function applyRow(index) {
+/* Token-only clear: blank the field and let the unified save flow apply it
+ * (empty token = reset that session to the default model). */
+function clearRow(index) {
   const row = rows.value[index];
-  if (!row.umo.trim()) {
-    row.result = "请先填写 UMO（会话 ID）。";
-    row.ok = false;
-    return;
-  }
-  row.busy = true;
-  row.result = "";
-  try {
-    const resp = await apiPost("session-model", { umo: row.umo.trim(), token: row.token.trim() });
-    if (resp && resp.status === "error") {
-      throw new Error(resp.message || "设置错误");
-    }
-    row.result = row.token.trim()
-      ? "当前会话模型更改为：" + row.token.trim()
-      : "已清除该会话的模型设置，恢复默认配置。";
-    row.ok = true;
-  } catch (err) {
-    row.result = err.message || String(err);
-    row.ok = false;
-  } finally {
-    row.busy = false;
-  }
-}
-
-async function clearRow(index) {
-  const row = rows.value[index];
-  if (!row.umo.trim()) {
-    row.result = "请先填写 UMO（会话 ID）。";
-    row.ok = false;
-    return;
-  }
-  row.busy = true;
-  row.result = "";
-  try {
-    const resp = await apiPost("session-model", { umo: row.umo.trim(), token: "" });
-    if (resp && resp.status === "error") {
-      throw new Error(resp.message || "设置错误");
-    }
-    row.token = "";
-    row.result = "已清除该会话的模型设置，恢复默认配置。";
-    row.ok = true;
-  } catch (err) {
-    row.result = err.message || String(err);
-    row.ok = false;
-  } finally {
-    row.busy = false;
-  }
+  row.token = "";
+  row.result = "已改为恢复默认，点侧栏「保存配置」后生效。";
+  row.ok = true;
+  syncStore();
+  markDirty();
 }
 
 onMounted(() => {
+  store.reloadSessions = reloadSessions;
   loadSessions();
 });
 </script>

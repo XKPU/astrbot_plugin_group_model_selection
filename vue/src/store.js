@@ -28,6 +28,12 @@ export const store = reactive({
   dirty: false,
   busy: false,
   alert: null,
+  /* Session rows owned by SessionTab; saveConfig flushes changed rows. */
+  sessionRows: [],
+  /* Saved-state snapshot {umo, token} for change detection. */
+  sessionSaved: [],
+  /* Set by SessionTab so reload paths (重新加载/取消编辑) refresh rows too. */
+  reloadSessions: null,
 });
 
 export function markDirty() {
@@ -55,6 +61,33 @@ export function applyConfig(cfg) {
     }
   }
   store.config = merged;
+}
+
+/* Session row snapshot taken by SessionTab whenever rows load or change;
+ * saveConfig compares live rows against the saved snapshot to flush only
+ * actually-changed rows. */
+export function snapshotSessions(rows) {
+  store.sessionRows = rows;
+}
+
+export function markSessionsSaved() {
+  store.sessionSaved = store.sessionRows.map((row) => ({
+    umo: row.umo,
+    token: row.token,
+  }));
+}
+
+export function changedSessions() {
+  const saved = new Map(
+    store.sessionSaved
+      .filter((row) => row.umo.trim())
+      .map((row) => [row.umo.trim(), row.token]),
+  );
+  return store.sessionRows.filter((row) => {
+    const umo = row.umo.trim();
+    if (!umo) return false;
+    return saved.get(umo) !== row.token;
+  });
 }
 
 function normalizeVersion(value) {
@@ -88,6 +121,9 @@ export async function loadAll() {
     }
     clearDirty();
     store.alert = null;
+    if (typeof store.reloadSessions === "function") {
+      await store.reloadSessions();
+    }
   } finally {
     store.busy = false;
   }
@@ -106,16 +142,36 @@ export async function saveConfig() {
       savedWrap && Array.isArray(savedWrap.session_changes)
         ? savedWrap.session_changes
         : [];
+    /* Flush session rows changed since the last saved snapshot, mirroring
+     * the per-row 应用 button (empty token = reset to default). */
+    let flushed = 0;
+    for (const row of changedSessions()) {
+      const umo = row.umo.trim();
+      try {
+        const rowResp = await apiPost("session-model", {
+          umo,
+          token: row.token.trim(),
+        });
+        if (rowResp && rowResp.status === "error") {
+          throw new Error(rowResp.message || "设置错误");
+        }
+        flushed += 1;
+      } catch (rowErr) {
+        showAlert(
+          "err",
+          `会话 ${umo} 保存失败：${rowErr.message || String(rowErr)}`,
+        );
+      }
+    }
     const freshWrap = pick(await apiGet("config"));
     const fresh = freshWrap && freshWrap.config ? freshWrap.config : freshWrap;
     if (fresh && typeof fresh === "object") applyConfig(fresh);
+    markSessionsSaved();
     clearDirty();
-    showAlert(
-      "ok",
-      changes.length
-        ? `配置已保存。已同步 ${changes.length} 个会话。`
-        : "配置已保存。",
-    );
+    const notes = [];
+    if (changes.length) notes.push(`已同步 ${changes.length} 个会话。`);
+    if (flushed) notes.push(`已应用 ${flushed} 条会话模型设置。`);
+    showAlert("ok", notes.length ? `配置已保存。${notes.join("")}` : "配置已保存。");
   } catch (err) {
     showAlert("err", err.message || String(err));
   } finally {
