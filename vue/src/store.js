@@ -90,6 +90,17 @@ export function changedSessions() {
   });
 }
 
+/* Sessions present in the saved snapshot but missing from the live rows:
+ * deleted entries whose stored preference must be reset. */
+export function removedSessions() {
+  const live = new Set(
+    store.sessionRows.map((row) => row.umo.trim()).filter((umo) => umo),
+  );
+  return store.sessionSaved.filter(
+    (row) => row.umo.trim() && !live.has(row.umo.trim()),
+  );
+}
+
 function normalizeVersion(value) {
   const text = String(value || "").trim();
   return text ? "v" + text.replace(/^v+/i, "") : "";
@@ -143,8 +154,25 @@ export async function saveConfig() {
         ? savedWrap.session_changes
         : [];
     /* Flush session rows changed since the last saved snapshot, mirroring
-     * the per-row 应用 button (empty token = reset to default). */
+     * the per-row 应用 button (empty token = reset to default). Deleted
+     * rows must reset their stored preference too, or the session
+     * reappears after a reload. */
     let flushed = 0;
+    for (const row of removedSessions()) {
+      const umo = row.umo.trim();
+      try {
+        const rowResp = await apiPost("session-model", { umo, token: "" });
+        if (rowResp && rowResp.status === "error") {
+          throw new Error(rowResp.message || "设置错误");
+        }
+        flushed += 1;
+      } catch (rowErr) {
+        showAlert(
+          "err",
+          `会话 ${umo} 清除失败：${rowErr.message || String(rowErr)}`,
+        );
+      }
+    }
     for (const row of changedSessions()) {
       const umo = row.umo.trim();
       try {

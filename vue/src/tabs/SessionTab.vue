@@ -84,8 +84,15 @@ function makeRow(umo, asSet) {
   };
 }
 
-function syncStore() {
+/* Update the shared row list without re-baselining the saved snapshot:
+ * add/remove must keep the old baseline so saveConfig can detect removed
+ * sessions and reset them on the backend. */
+function syncRows() {
   store.sessionRows = rows.value;
+}
+
+function syncStore() {
+  syncRows();
   markSessionsSaved();
 }
 
@@ -117,12 +124,12 @@ async function reloadSessions() {
 
 function addRow() {
   rows.value.push(makeRow("", ""));
-  syncStore();
+  syncRows();
 }
 
 function removeRow(index) {
   rows.value.splice(index, 1);
-  syncStore();
+  syncRows();
   markDirty();
 }
 

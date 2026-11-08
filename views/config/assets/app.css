@@ -613,19 +613,9 @@ datalist {
 
 /* Model card drag sorting */
 
-.drag-handle {
-  cursor: grab;
-  opacity: 0.55;
-  font-size: 13px;
-  letter-spacing: -2px;
-  user-select: none;
-}
-
-.model-card.dragging {
-  opacity: 0.5;
-}
-
-.model-card.drop-target {
-  outline: 2px dashed var(--primary);
-  outline-offset: 2px;
+.move-btn {
+  min-width: 32px;
+  padding: 5px 8px;
+  font-size: 14px;
+  line-height: 1;
 }

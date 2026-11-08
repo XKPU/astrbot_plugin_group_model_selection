@@ -12,15 +12,8 @@
       v-for="(model, index) in models"
       :key="model.__template_key || 'm-' + index"
       class="model-card"
-      draggable="true"
-      :class="{ 'dragging': dragIndex === index, 'drop-target': dropIndex === index && dragIndex !== index }"
-      @dragstart="onDragStart(index, $event)"
-      @dragover.prevent="onDragOver(index)"
-      @dragend="onDragEnd"
-      @drop.prevent="onDrop(index)"
     >
       <div class="model-head">
-        <span class="drag-handle" title="拖动排序" aria-hidden="true">⋮⋮</span>
         <label class="switch-row grow">
           <input
             type="checkbox"
@@ -29,6 +22,22 @@
           >
           <span>启用</span>
         </label>
+        <button
+          type="button"
+          class="btn ghost sm move-btn"
+          title="上移"
+          aria-label="上移"
+          :disabled="index === 0"
+          @click="moveModel(index, -1)"
+        >↑</button>
+        <button
+          type="button"
+          class="btn ghost sm move-btn"
+          title="下移"
+          aria-label="下移"
+          :disabled="index === models.length - 1"
+          @click="moveModel(index, 1)"
+        >↓</button>
         <button type="button" class="btn danger-text sm" @click="removeModel(index)">删除</button>
       </div>
       <div class="model-grid">
@@ -67,37 +76,16 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { store, markDirty } from "../store.js";
 const models = computed(() => store.config.models);
-const dragIndex = ref(-1);
-const dropIndex = ref(-1);
 
-function onDragStart(index, event) {
-  dragIndex.value = index;
-  event.dataTransfer.effectAllowed = "move";
-  event.dataTransfer.setData("text/plain", String(index));
-}
-
-function onDragOver(index) {
-  dropIndex.value = index;
-}
-
-function onDrop(index) {
-  const from = dragIndex.value;
-  if (from < 0 || from === index) {
-    onDragEnd();
-    return;
-  }
-  const moved = models.value.splice(from, 1)[0];
-  models.value.splice(index, 0, moved);
+function moveModel(index, offset) {
+  const target = index + offset;
+  if (target < 0 || target >= models.value.length) return;
+  const moved = models.value.splice(index, 1)[0];
+  models.value.splice(target, 0, moved);
   markDirty();
-  onDragEnd();
-}
-
-function onDragEnd() {
-  dragIndex.value = -1;
-  dropIndex.value = -1;
 }
 
 function nextKey() {
