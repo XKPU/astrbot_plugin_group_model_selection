@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.0.6] - 2026-11-08
+
+### 信息
+
+- 当前版本仅提升版本号，若已安装 v1.0.5 则无需更新
+
 ## [v1.0.5] - 2026-11-08
 
 ### 修复
@@ -76,6 +82,7 @@
 - `enable_main_command` 配置项，关闭后主命令不响应，仅可通过配置页管理会话模型。
 - Web API 读写配置、查询模型列表、管理会话模型偏好。
 
+[v1.0.6]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/v1.0.5...v1.0.6
 [v1.0.5]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/v1.0.4...v1.0.5
 [v1.0.4]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/v1.0.3...v1.0.4
 [v1.0.3]: https://github.com/XKPU/astrbot_plugin_group_model_selection/compare/v1.0.2...v1.0.3

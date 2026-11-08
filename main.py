@@ -18,7 +18,7 @@ PLUGIN_NAME = "astrbot_plugin_group_model_selection"
     "astrbot_plugin_group_model_selection",
     "K_PU",
     "通过 /msto 按别名或模型 ID 设置会话首选模型",
-    "1.0.5",
+    "1.0.6",
 )
 class GroupModelSelectionPlugin(WebApiMixin, CommandMixin, Star):
     """Per-session model selection via chat commands and a config view."""

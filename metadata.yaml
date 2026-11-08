@@ -1,6 +1,6 @@
 name: astrbot_plugin_group_model_selection
 display_name: 会话模型设置
 desc: 设置首选模型，支持别名、管理员白名单（UID）、模型列表与会话查询命令，并提供独立的可视化配置页面（含会话模型管理）。
-version: v1.0.5
+version: v1.0.6
 author: K_PU
 repo: https://github.com/XKPU/astrbot_plugin_group_model_selection
